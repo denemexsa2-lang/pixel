@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GameMap, GameMapRef } from './GameMap';
-import { Users, Coins, Sword, Shield, Factory as FactoryIcon, LogOut, Zap, TrendingUp, Activity, Map as MapIcon } from 'lucide-react';
+import { Users, Coins, Sword, Factory as FactoryIcon, LogOut, Zap, Activity, Map as MapIcon } from 'lucide-react';
 import { Factory } from '../utils/gameUtils';
 import { useMultiplayer } from '../context/MultiplayerContext';
 
