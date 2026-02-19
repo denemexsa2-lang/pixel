@@ -72,7 +72,7 @@ export const MultiplayerProvider: React.FC<MultiplayerProviderProps> = ({ childr
     useEffect(() => {
         // Initialize Socket connection
         // In production, this URL should be an environment variable
-        const newSocket = io('http://localhost:3001', {
+        const newSocket = io(import.meta.env.VITE_API_URL || 'http://localhost:3001', {
             autoConnect: true,
             reconnection: true,
         });
