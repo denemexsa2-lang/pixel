@@ -84,23 +84,6 @@ export const GameInterface: React.FC<GameInterfaceProps> = ({ onLeave, spawnPoin
     };
   }, [socket]);
 
-  // Flush expansion updates periodically
-  useEffect(() => {
-    if (!socket) return;
-
-    const interval = setInterval(() => {
-      const { amount, cost } = pendingExpansionRef.current;
-      if (amount > 0) {
-        // Send to server
-        sendGameAction('expand', { amount, cost });
-        // Reset
-        pendingExpansionRef.current = { amount: 0, cost: 0 };
-      }
-    }, 200);
-
-    return () => clearInterval(interval);
-  }, [socket, sendGameAction]);
-
   useEffect(() => {
     territorySizeRef.current = territorySize;
   }, [territorySize]);
@@ -328,11 +311,6 @@ export const GameInterface: React.FC<GameInterfaceProps> = ({ onLeave, spawnPoin
 
   const handleAttackReceived = useCallback(() => {
     setPendingAttackTroops(0);
-  }, []);
-
-  const handleExpansionUpdate = useCallback((amount: number, cost: number) => {
-    pendingExpansionRef.current.amount += amount;
-    pendingExpansionRef.current.cost += cost;
   }, []);
 
   const handleRightClick = useCallback((index: number) => {
