@@ -72,7 +72,8 @@ export const MultiplayerProvider: React.FC<MultiplayerProviderProps> = ({ childr
     useEffect(() => {
         // Initialize Socket connection
         // In production, this URL should be an environment variable
-        const newSocket = io(import.meta.env.VITE_API_URL || 'http://localhost:3001', {
+console.log('Connecting to:', import.meta.env.VITE_API_URL || 'https://frontwars-server-1234.onrender.com');
+        const newSocket = io(import.meta.env.VITE_API_URL || 'https://frontwars-server-1234.onrender.com', {
             autoConnect: true,
             reconnection: true,
         });
