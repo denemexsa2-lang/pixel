@@ -71,8 +71,17 @@ export const MultiplayerProvider: React.FC<MultiplayerProviderProps> = ({ childr
 
     useEffect(() => {
         // Initialize Socket connection
-        // In production, this URL should be an environment variable
-        const newSocket = io('http://localhost:3001', {
+        // Use environment variable if available, otherwise fallback to localhost logic
+        // This allows connection to work on deployed environments (like Render)
+        // if VITE_API_URL is set, and on local/LAN if not.
+        const apiUrl = import.meta.env.VITE_API_URL ||
+                      (window.location.hostname === 'localhost'
+                          ? 'http://localhost:3001'
+                          : `${window.location.protocol}//${window.location.hostname}:3001`);
+
+        console.log('Connecting to socket at:', apiUrl);
+
+        const newSocket = io(apiUrl, {
             autoConnect: true,
             reconnection: true,
         });
