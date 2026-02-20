@@ -191,17 +191,26 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ onBack }) => {
                         <h3 className="text-white font-bold flex items-center gap-2">
                             AVAILABLE OPERATIONS <span className="px-2 py-0.5 bg-slate-800 rounded text-xs text-slate-400">{availableRooms.length}</span>
                         </h3>
-                        <button className="p-2 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors">
+                        <button
+                            className="p-2 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors"
+                            aria-label="Refresh list"
+                            title="List updates automatically"
+                        >
                             <RefreshCw size={18} />
                         </button>
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
                         {availableRooms.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center text-slate-500 opacity-50">
-                                <MapIcon size={64} className="mb-4" />
-                                <p>No active operations found.</p>
-                                <p className="text-sm">Create a room to start a new conflict.</p>
+                            <div className="h-full flex flex-col items-center justify-center text-slate-500">
+                                <MapIcon size={64} className="mb-4 opacity-50" />
+                                <p className="mb-2 font-medium opacity-75">No active operations found.</p>
+                                <button
+                                    onClick={() => setShowCreateModal(true)}
+                                    className="text-sm text-cyan-500 hover:text-cyan-400 underline underline-offset-4 decoration-slate-500 hover:decoration-cyan-400 transition-all font-bold"
+                                >
+                                    Create a room to start a new conflict
+                                </button>
                             </div>
                         ) : (
                             availableRooms.map(room => (
@@ -246,14 +255,20 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ onBack }) => {
 
             {/* Create Room Modal */}
             {showCreateModal && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+                <div
+                    className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="create-room-title"
+                >
                     <div className="bg-slate-900 border border-slate-700 rounded-xl p-8 w-full max-w-md shadow-2xl">
-                        <h2 className="text-2xl font-bold text-white mb-6">Create New Operation</h2>
+                        <h2 id="create-room-title" className="text-2xl font-bold text-white mb-6">Create New Operation</h2>
 
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm text-slate-400 mb-1">Room Name</label>
+                                <label htmlFor="room-name" className="block text-sm text-slate-400 mb-1">Room Name</label>
                                 <input
+                                    id="room-name"
                                     type="text"
                                     value={newRoomName}
                                     onChange={(e) => setNewRoomName(e.target.value)}
@@ -262,8 +277,9 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ onBack }) => {
                             </div>
 
                             <div>
-                                <label className="block text-sm text-slate-400 mb-1">Map Selection</label>
+                                <label htmlFor="map-select" className="block text-sm text-slate-400 mb-1">Map Selection</label>
                                 <select
+                                    id="map-select"
                                     value={selectedMap}
                                     onChange={(e) => setSelectedMap(e.target.value)}
                                     className="w-full bg-slate-800 border border-slate-700 rounded p-3 text-white focus:border-cyan-500 outline-none"
@@ -275,8 +291,9 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ onBack }) => {
                             </div>
 
                             <div>
-                                <label className="block text-sm text-slate-400 mb-1">Max Players: {maxPlayers}</label>
+                                <label htmlFor="max-players" className="block text-sm text-slate-400 mb-1">Max Players: {maxPlayers}</label>
                                 <input
+                                    id="max-players"
                                     type="range"
                                     min="2"
                                     max="50"
