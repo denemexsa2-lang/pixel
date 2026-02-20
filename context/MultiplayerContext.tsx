@@ -71,8 +71,12 @@ export const MultiplayerProvider: React.FC<MultiplayerProviderProps> = ({ childr
 
     useEffect(() => {
         // Initialize Socket connection
-        // In production, this URL should be an environment variable
-        const newSocket = io('http://localhost:3001', {
+        // Use environment variable or fallback to localhost:3001
+        const serverUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+        console.log(`Connecting to multiplayer server at: ${serverUrl}`);
+
+        const newSocket = io(serverUrl, {
             autoConnect: true,
             reconnection: true,
         });
@@ -82,6 +86,11 @@ export const MultiplayerProvider: React.FC<MultiplayerProviderProps> = ({ childr
         newSocket.on('connect', () => {
             console.log('Connected to multiplayer server');
             setIsConnected(true);
+        });
+
+        newSocket.on('connect_error', (err) => {
+            console.error('Connection error:', err.message);
+            setIsConnected(false);
         });
 
         newSocket.on('disconnect', () => {
