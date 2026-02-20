@@ -371,6 +371,49 @@ export const GameInterface: React.FC<GameInterfaceProps> = ({ onLeave, spawnPoin
     }
   };
 
+
+  // TOUCH HANDLERS (Mobile)
+  const touchStartDist = useRef<number>(0);
+  const touchStartScale = useRef<number>(1);
+  const isPinchingRef = useRef<boolean>(false);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      isDraggingRef.current = true;
+      hasDraggedRef.current = false;
+      lastMousePosRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    } else if (e.touches.length === 2) {
+      isPinchingRef.current = true;
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      touchStartDist.current = dist;
+      touchStartScale.current = scale;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 1 && isDraggingRef.current) {
+      const dx = e.touches[0].clientX - lastMousePosRef.current.x;
+      const dy = e.touches[0].clientY - lastMousePosRef.current.y;
+      setPosition(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+      lastMousePosRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    } else if (e.touches.length === 2 && isPinchingRef.current) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const delta = dist / touchStartDist.current;
+      setScale(Math.min(Math.max(0.8, touchStartScale.current * delta), 20));
+    }
+  };
+
+  const handleTouchEnd = () => {
+    isDraggingRef.current = false;
+    isPinchingRef.current = false;
+  };
+
   const handleMouseUp = () => {
     isDraggingRef.current = false;
     // Note: hasDraggedRef remains true until the click event fires and consumes it
@@ -431,6 +474,9 @@ export const GameInterface: React.FC<GameInterfaceProps> = ({ onLeave, spawnPoin
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
       onClickCapture={handleClickCapture}
     >
 
@@ -588,17 +634,59 @@ export const GameInterface: React.FC<GameInterfaceProps> = ({ onLeave, spawnPoin
         </div>
       )}
 
-      {/* 1. TOP LEFT: EXIT BUTTON */}
+      {/* 1. TOP LEFT: EXIT BUTTON (DESKTOP) */}
       <button
         onClick={onLeave}
-        className="absolute top-4 left-4 bg-red-500/20 hover:bg-red-500/40 text-red-400 border border-red-500/30 p-2 rounded-lg transition-all z-50"
+        className="absolute top-4 left-4 hidden md:block bg-red-500/20 hover:bg-red-500/40 text-red-400 border border-red-500/30 p-2 rounded-lg transition-all z-50"
         title="Oyundan Çık"
       >
         <LogOut size={20} />
       </button>
 
+
+            {/* 2b. TOP BAR: RESOURCES PANEL (MOBILE) */}
+      <div className="absolute top-0 left-0 right-0 h-14 bg-slate-900/90 backdrop-blur-md border-b border-slate-700/50 z-40 flex items-center justify-between px-4 md:hidden">
+         {/* Troops (Compact) */}
+         <div className="flex flex-col items-center">
+            <div className="flex items-center gap-1 text-slate-300">
+               <Users size={12} />
+               <span className={`text-xs font-bold ${isOverCapacity ? 'text-red-500' : 'text-white'}`}>{fmt(troops)}</span>
+            </div>
+            <div className="w-10 h-1 bg-slate-700 rounded-full mt-0.5 relative overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-1000 ease-linear ${bonusBarColor}`}
+                  style={{ width: `${bonusProgress}%` }}
+                />
+            </div>
+         </div>
+
+         {/* Gold (Compact) */}
+         <div className="flex flex-col items-center">
+             <div className="flex items-center gap-1 text-yellow-400">
+               <Coins size={12} />
+               <span className="text-xs font-bold">{fmt(gold)}</span>
+            </div>
+         </div>
+
+         {/* Territory (Compact) */}
+         <div className="flex flex-col items-center">
+             <div className="flex items-center gap-1 text-cyan-400">
+               <MapIcon size={12} />
+               <span className="text-xs font-bold">{fmt(territorySize)}</span>
+            </div>
+         </div>
+
+         {/* Exit Button (Mobile) */}
+         <button
+            onClick={onLeave}
+            className="text-red-400 p-1"
+          >
+            <LogOut size={16} />
+          </button>
+      </div>
+
       {/* 2. TOP RIGHT: RESOURCES PANEL */}
-      <div className="absolute top-4 right-4 w-64 bg-slate-900/80 backdrop-blur-md p-3 rounded-xl border border-slate-700/50 space-y-2 z-50 shadow-2xl">
+      <div className="absolute top-4 right-4 w-64 hidden md:block bg-slate-900/80 backdrop-blur-md p-3 rounded-xl border border-slate-700/50 space-y-2 z-50 shadow-2xl">
         {/* Troops */}
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2 text-slate-400">
@@ -698,7 +786,7 @@ export const GameInterface: React.FC<GameInterfaceProps> = ({ onLeave, spawnPoin
       </div>
 
       {/* 4. BOTTOM CENTER: FACTORY BUTTON */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40">
+      <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-40 md:bottom-8">
         <button
           onClick={handleBuyFactory}
           disabled={gold < factoryCost}

@@ -343,7 +343,7 @@ const AppContent: React.FC = () => {
       {/* Main Content Container */}
       <div className="relative z-10 h-full flex flex-col items-center justify-center p-4 pb-16">
 
-        <div className="w-full max-w-[580px] flex flex-col gap-5 animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <div className="w-full max-w-full md:max-w-[580px] flex flex-col gap-5 animate-in fade-in slide-in-from-bottom-8 duration-700">
           {/* Header Section */}
           <Header />
 
@@ -394,7 +394,7 @@ const AppContent: React.FC = () => {
       {/* Settings Icon (Bottom Right) */}
       <button
         onClick={handleSettings}
-        className="absolute bottom-12 right-8 z-30 p-3.5 text-cyan-500 hover:text-white hover:rotate-90 transition-all duration-500 bg-slate-900/80 rounded-full border-2 border-cyan-500/20 hover:border-cyan-400 shadow-lg hover:shadow-[0_0_20px_rgba(34,211,238,0.4)] backdrop-blur-sm group"
+        className="absolute top-4 right-4 md:bottom-12 md:right-8 z-30 p-3.5 text-cyan-500 hover:text-white hover:rotate-90 transition-all duration-500 bg-slate-900/80 rounded-full border-2 border-cyan-500/20 hover:border-cyan-400 shadow-lg hover:shadow-[0_0_20px_rgba(34,211,238,0.4)] backdrop-blur-sm group"
       >
         <Settings size={32} strokeWidth={2} className="group-hover:drop-shadow-[0_0_5px_rgba(255,255,255,0.5)]" />
       </button>
