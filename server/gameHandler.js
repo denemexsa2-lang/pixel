@@ -4,10 +4,12 @@ class GameHandler {
     constructor(io, roomId, players) {
         this.io = io;
         this.roomId = roomId;
-        this.players = players.map(p => ({
+        this.availableColors = ['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#a855f7', '#ec4899'];
+
+        this.players = players.map((p, index) => ({
             id: p.id,
             username: p.username,
-            color: this.getRandomColor(),
+            color: this.availableColors[index % this.availableColors.length],
             troops: 100,
             gold: 1000,
             territorySize: 100, // Starting pixels
@@ -25,11 +27,7 @@ class GameHandler {
 
         this.interval = null;
         this.lastUpdate = Date.now();
-    }
-
-    getRandomColor() {
-        const colors = ['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#a855f7', '#ec4899'];
-        return colors[Math.floor(Math.random() * colors.length)];
+        this.timeSinceLastEconomyUpdate = 0;
     }
 
     start() {
@@ -62,18 +60,45 @@ class GameHandler {
         // 1. Update Economy (Troops & Gold)
         // ONLY IN PLAYING PHASE
         if (this.gameState.phase === 'playing') {
-            this.players.forEach(player => {
-                // Only update if player has spawned
-                if (player.spawnPoint !== null) {
-                    // Simple growth logic (mocking client logic for now)
-                    if (now % 1000 < 50) { // Approx once per second
-                        player.gold += 1; // Base income
-                        if (player.troops < player.territorySize * 5) {
-                            player.troops += Math.floor(player.territorySize * 0.05);
+            this.timeSinceLastEconomyUpdate += dt;
+
+            if (this.timeSinceLastEconomyUpdate >= 1.0) {
+                this.timeSinceLastEconomyUpdate -= 1.0;
+
+                this.players.forEach(player => {
+                    // Only update if player has spawned
+                    if (player.spawnPoint !== null) {
+                        // Gold Income
+                        let income = 85;
+                        player.factories.forEach(f => {
+                            if (f.level === 1) income += 50;
+                            else if (f.level === 2) income += 150;
+                            else if (f.level === 3) income += 400;
+                        });
+                        player.gold += income;
+
+                        // Troop Growth
+                        const maxUnits = Math.max(100, player.territorySize * 5);
+                        if (player.troops < maxUnits) {
+                            const currentPercentage = player.troops / maxUnits;
+                            let growthRate = 0;
+                            if (currentPercentage <= 0.50) {
+                                growthRate = 0.05;
+                            } else {
+                                growthRate = Math.max(0, 0.1 * (1 - currentPercentage));
+                            }
+
+                            let addedTroops = Math.floor(player.troops * growthRate);
+
+                            // Simplified Bonus (approximate client's complex logic)
+                            const bonus = Math.floor(player.territorySize / 15);
+                            addedTroops += bonus;
+
+                            player.troops = Math.min(maxUnits, player.troops + addedTroops);
                         }
                     }
-                }
-            });
+                });
+            }
         }
 
         // 2. Process Attacks
@@ -127,23 +152,39 @@ class GameHandler {
                 // this.gameState.attacks.push({ ... });
                 break;
             case 'expand':
-                // Update territory
-                player.territorySize += data.amount;
-                player.troops -= data.cost;
+                if (player.troops >= data.cost) {
+                    player.territorySize += data.amount;
+                    player.troops -= data.cost;
 
-                // Broadcast expansion event to other players for simulation
-                // Use this.io.to which sends to everyone (client filters self)
-                this.io.to(this.roomId).emit('player_expanded', {
-                    playerId: player.id,
-                    amount: data.amount,
-                    color: player.color // Send color for verification/visuals
-                });
+                    this.io.to(this.roomId).emit('player_expanded', {
+                        playerId: player.id,
+                        amount: data.amount,
+                        color: player.color
+                    });
+                }
                 break;
             case 'build_factory':
-                // ... factory logic ...
+                const factoryCost = 200 + (player.factories.length * 100);
+                if (player.gold >= factoryCost) {
+                    player.gold -= factoryCost;
+                    const newFactory = {
+                        id: Date.now() + Math.random(),
+                        x: data.x,
+                        y: data.y,
+                        level: 1
+                    };
+                    player.factories.push(newFactory);
+                }
                 break;
             case 'upgrade_factory':
-                // ... upgrade logic ...
+                const factory = player.factories.find(f => f.id === data.factoryId);
+                if (factory && factory.level < 3) {
+                    const upgradeCost = factory.level === 1 ? 1000 : 2500;
+                    if (player.gold >= upgradeCost) {
+                        player.gold -= upgradeCost;
+                        factory.level += 1;
+                    }
+                }
                 break;
             // case 'update_player_state':
             //     // Client reporting their own state (Optimistic Sync) - REMOVED

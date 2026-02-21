@@ -50,13 +50,15 @@ export const GameInterface: React.FC<GameInterfaceProps> = ({ onLeave, spawnPoin
 
   // Sync with Server State if available
   useEffect(() => {
-    if (gameState) {
+    if (gameState && gameState.phase === 'playing') {
       // Find our player in the game state
       const myPlayer = gameState.players.find(p => p.username === username);
       if (myPlayer) {
-        // In a real implementation, we would sync authoritative state here
-        // For now, we just log it to verify connection
-        // console.log("Server State:", myPlayer);
+        setGold(myPlayer.gold);
+        setTroops(myPlayer.troops);
+        if (myPlayer.factories) {
+          setFactories(myPlayer.factories);
+        }
       }
     }
   }, [gameState, username]);
@@ -135,6 +137,9 @@ export const GameInterface: React.FC<GameInterfaceProps> = ({ onLeave, spawnPoin
       const cycleStep = localTime % 5;
       const newProgress = cycleStep === 0 ? 100 : cycleStep * 20;
       setBonusProgress(newProgress);
+
+      // If multiplayer state is active, let the server handle economy
+      if (gameState) return;
 
       setTroops(prevTroops => {
         const currentTerritorySize = territorySizeRef.current;
