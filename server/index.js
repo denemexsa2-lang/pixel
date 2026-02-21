@@ -50,6 +50,8 @@ function startGame(roomId) {
 
 // Helper: Check Auto-Start Conditions
 function checkAutoStart(room) {
+  if (room.status !== 'waiting') return;
+
   let targetTime = null;
   const playerCount = room.players.length;
 
