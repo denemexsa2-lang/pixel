@@ -106,9 +106,12 @@ class GameHandler {
     handlePlayerAction(socketId, action, data) {
         const player = this.players.find(p => p.id === socketId);
         if (!player) return;
+        if (!data || typeof data !== 'object') return;
 
         switch (action) {
             case 'choose_spawn':
+                if (typeof data.index !== 'number' || data.index < 0) return;
+
                 if (player.spawnPoint === null) {
                     player.spawnPoint = data.index;
                     // Initialize territory around spawn (mock)
@@ -127,6 +130,13 @@ class GameHandler {
                 // this.gameState.attacks.push({ ... });
                 break;
             case 'expand':
+                // Security Check: Positive amount and cost
+                if (typeof data.amount !== 'number' || data.amount <= 0) return;
+                if (typeof data.cost !== 'number' || data.cost <= 0) return;
+
+                // Security Check: Sufficient troops
+                if (player.troops < data.cost) return;
+
                 // Update territory
                 player.territorySize += data.amount;
                 player.troops -= data.cost;

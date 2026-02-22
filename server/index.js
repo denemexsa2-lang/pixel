@@ -18,6 +18,7 @@ const io = new Server(server, {
 // State
 let rooms = [];
 const activeGames = new Map(); // roomId -> GameHandler
+const socketToRoom = new Map(); // socketId -> roomId
 
 // Helper: Start Game
 function startGame(roomId) {
@@ -116,16 +117,21 @@ io.on('connection', (socket) => {
   socket.emit('room_list_update', getSortedRooms());
 
   socket.on('create_room', ({ name, map, maxPlayers, username }) => {
+    // Input Validation
+    if (!name || typeof name !== 'string' || name.trim().length < 3 || name.length > 30) return;
+    if (!username || typeof username !== 'string' || username.trim().length < 3 || username.length > 20) return;
+    if (!maxPlayers || typeof maxPlayers !== 'number' || maxPlayers < 2 || maxPlayers > 50) return;
+
     console.log(`Creating room: ${name} by ${username}`);
     const roomId = Math.random().toString(36).substring(7);
     const newRoom = {
       id: roomId,
-      name,
+      name: name.trim(),
       map,
       maxPlayers,
       players: [{
         id: socket.id,
-        username,
+        username: username.trim(),
         isReady: false,
         isHost: true
       }],
@@ -135,23 +141,29 @@ io.on('connection', (socket) => {
 
     rooms.push(newRoom);
     socket.join(roomId);
+    socketToRoom.set(socket.id, roomId);
 
     io.emit('room_list_update', getSortedRooms());
     socket.emit('room_joined', newRoom);
   });
 
   socket.on('join_room', ({ roomId, username }) => {
+    // Input Validation
+    if (!username || typeof username !== 'string' || username.trim().length < 3 || username.length > 20) return;
+    if (!roomId || typeof roomId !== 'string') return;
+
     console.log(`User ${username} joining room ${roomId}`);
     const room = rooms.find(r => r.id === roomId);
     if (room && room.status === 'waiting' && room.players.length < room.maxPlayers) {
       room.players.push({
         id: socket.id,
-        username,
+        username: username.trim(),
         isReady: false,
         isHost: false
       });
 
       socket.join(roomId);
+      socketToRoom.set(socket.id, roomId);
 
       checkAutoStart(room); // Check for auto-start
 
@@ -167,6 +179,7 @@ io.on('connection', (socket) => {
     if (room) {
       room.players = room.players.filter(p => p.id !== socket.id);
       socket.leave(roomId);
+      socketToRoom.delete(socket.id);
       socket.emit('room_left');
 
       if (room.players.length === 0) {
@@ -224,27 +237,34 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
-    rooms.forEach(room => {
-      const playerIndex = room.players.findIndex(p => p.id === socket.id);
-      if (playerIndex !== -1) {
-        room.players.splice(playerIndex, 1);
-        if (room.players.length === 0) {
-          if (room.countdownInterval) clearInterval(room.countdownInterval);
-          rooms = rooms.filter(r => r.id !== room.id);
-          if (activeGames.has(room.id)) {
-            activeGames.get(room.id).stop();
-            activeGames.delete(room.id);
+    const roomId = socketToRoom.get(socket.id);
+
+    if (roomId) {
+      const room = rooms.find(r => r.id === roomId);
+      if (room) {
+        const playerIndex = room.players.findIndex(p => p.id === socket.id);
+        if (playerIndex !== -1) {
+          room.players.splice(playerIndex, 1);
+
+          if (room.players.length === 0) {
+            if (room.countdownInterval) clearInterval(room.countdownInterval);
+            rooms = rooms.filter(r => r.id !== room.id);
+            if (activeGames.has(room.id)) {
+              activeGames.get(room.id).stop();
+              activeGames.delete(room.id);
+            }
+          } else {
+            if (!room.players.some(p => p.isHost)) {
+              room.players[0].isHost = true;
+            }
+            checkAutoStart(room);
+            io.to(room.id).emit('room_updated', room);
           }
-        } else {
-          if (!room.players.some(p => p.isHost)) {
-            room.players[0].isHost = true;
-          }
-          checkAutoStart(room);
-          io.to(room.id).emit('room_updated', room);
+          io.emit('room_list_update', getSortedRooms());
         }
-        io.emit('room_list_update', getSortedRooms());
       }
-    });
+      socketToRoom.delete(socket.id);
+    }
   });
 });
 
